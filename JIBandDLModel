@@ -1,23 +1,23 @@
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
-
+import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration.Builder;
+import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.layers.recurrent.LSTM;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
-
 
 
 public class JIBandDLModel {
@@ -29,14 +29,6 @@ public class JIBandDLModel {
 	private static final int N_SAMPLES_TESTING = 4;
 	private static final int N_OUTCOMES= 2;
 	private static final long t0 = System.currentTimeMillis();
-	
-	private static DataSetIterator getDataSetIterator(String folderPath, int nSamples)  {
-		
-		File folder = new File(folderPath);
-		return null;
-		Scanner sc = null;
-		
-	}
 	
 	public static void main(String[] args) {
 		
@@ -54,27 +46,37 @@ public class JIBandDLModel {
 				//a regularization method that adds information to solve ill-posed problems as well as preventing overfitting.
 				.l2(1e-4)
 				.list()
-				.layer(new GravesLSTM.Builder()
+				.layer(new LSTM.Builder()
 					.nIn(COLUMNS*ROWS)
 					.nOut(100)
 					.activation(Activation.RELU)
 					.weightInit(WeightInit.XAVIER)
 					.build())
-				.layer(new OutputLayer.Builder(LossFunction.NEGATIVELOGLIKELIHOOD))
+				.layer(new OutputLayer.Builder(LossFunction.NEGATIVELOGLIKELIHOOD)
 					.nIn(100)
 					.nOut(N_OUTCOMES)
 					.activation(Activation.SOFTMAX)
 					.weightInit(WeightInit.XAVIER)
-					.build()
+					.build())
 				.build();
+	
+				
 		
+		//creates multi-layer model object.
 		MultiLayerNetwork model = new MultiLayerNetwork(conf);
+		// initialize multi-layer network.
 		model.init();
+		//initiazes training of the model with training data.
 		System.out.println("Train model....");
+		model.fit(dsi, nEpochs);
 		
+		// an object created to iterate through the testing data.
 		DataSetIterator testDsi = getDataSetIterator(IMU_DATASET_ROOT_FOLDER + "testing", N_SAMPLES_TESTING);
+		
 		System.out.println("Evaluate model....");
+		//applies the model to the testing data and evaluates the results.
 		Evaluation eval = model.evaluate(testDsi);
+		//prints the statistics of the model in terms of accuracy and how precise it is.
 		System.out.println(eval.stats()); 
 		
 		long t1 = System.currentTimeMillis();
