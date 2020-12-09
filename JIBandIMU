@@ -1,14 +1,20 @@
-private static DataSetIterator getDataSetIterator(String folderPath, int nSamples)  {
-	/*	
-		File folder = new File(folderPath);
-		File[] imuFolder = folder.listFiles();
-		ArrayList<Double> rpy = new ArrayList<Double>();
+	private static DataSetIterator getDataSetIterator(String folderPath, int nSamples)  {
 		
+	 
+		File folder = new File(folderPath);
+		File[] imuFolders = folder.listFiles();
+	
+	
+		int n = 0;
+		for (File imuFiles : imuFolders )
+		{ 
 		try {
-			Scanner imuScan = new Scanner(folder);
+			Scanner imuScan = new Scanner(imuFiles);
 			while (imuScan.hasNextLine()) 
 			{
-				folder.add(imuScan.nextLine());
+				String currentLine = imuScan.nextLine();
+				imuFolders.add(currentLine);
+				 imuFiles.length;
 			}
 		}
 		
@@ -16,17 +22,12 @@ private static DataSetIterator getDataSetIterator(String folderPath, int nSample
 		{
 			s.printStackTrace();
 		}
-	*/
+		}
+		
+		
+	
 		INDArray input = Nd4j.create(new double[] { nSamples, COLUMNS*ROWS});
 		INDArray output = Nd4j.create(new double[] {nSamples, N_OUTCOMES});
-		
-		int n = 0;
-		for (File imuFolder : imuFolders)
-		{
-			String scrubData = String.parse(imuFolder.getName);
-		File[] imuFiles = imuFolder.listFiles();
-		for (File imuFile : imuFiles)
-		}
 	
 	
 	DataSet dataSet = new DataSet( input , output );
