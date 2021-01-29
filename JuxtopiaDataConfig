@@ -1,0 +1,38 @@
+package it.rcpvision.dl4j.workbench;
+//Author: Arthur Chinery arichinery@gmail.com,  Creation Date: 1/28/21
+//Updated By:  , Updated Date:
+//Purpose: To parse through JSON files and call a value from its key. 
+
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.Reader;
+import java.text.ParseException;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+ 
+@SuppressWarnings("deprecation")
+public class JuxtopiaDataConfig 
+
+{
+	
+	public String getJIBandDataConfig (String strDataConfig) throws IOException, org.json.simple.parser.ParseException  //method that parsers through the JSON object to get the required data.
+	
+	{
+		JSONParser prsParser = new JSONParser(); 										//declaring and instantiating the JSON parser.
+		JSONObject jsoObj = new JSONObject(); 											//declaring and instantiating the JSON object.
+		String strJIBandKeyValue = null; 												//declaring a variable for the key value which is will be stored as type string.
+		Reader fleReader = new FileReader("/Users/NiiArmah/file2.json"); 				//reader variable is declared and instantiated as the absolute path to the JSON file.
+		jsoObj = (JSONObject)prsParser.parse(fleReader);								//variable for JSON object instantiated as the casting of the JSON object using the parser variable to parse the file reader.
+		strJIBandKeyValue =  (String)jsoObj.get(strDataConfig);							//JIBand key value string instantiated as the casting of the string using the jsoobj variable to get the required strdataconfig parameter.
+		return strJIBandKeyValue;														//the string value that must be returned as the string parameter states from the method above.
+	}
+	
+	public static void main(String[] args) throws ParseException, IOException, org.json.simple.parser.ParseException  	//the main method.
+	
+	{
+		JuxtopiaDataConfig j = new JuxtopiaDataConfig();								//declaring and instantiating the class juxtopia data config as variable j.
+		String strValue = j.getJIBandDataConfig("TestCorrect");							//the string value variable declared and instantiated to call the getJIBandDataConfig method on key value.
+		System.out.println("The JIBand Requested value is: " + strValue);				//print statement displaying the value associated with the specific key from the JSON file.
+	}
+	
+}
