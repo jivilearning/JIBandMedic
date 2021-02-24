@@ -52,7 +52,7 @@ public class JuxtopiaIMUDataPrint
 	public static void main(String[] args) throws IOException, ParseException {
 		
 		JuxtopiaIMUDataPrint i = new JuxtopiaIMUDataPrint();
-		String strData = i.printJIBandIMUData();
-		System.out.println(strData);
+		i.printJIBandIMUData();
+		
 		
  }
