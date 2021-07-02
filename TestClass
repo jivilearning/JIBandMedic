@@ -1,0 +1,179 @@
+package it.rcpvision.dl4j.workbench;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Scanner;
+import java.util.logging.Logger;
+
+import org.datavec.api.records.reader.SequenceRecordReader;
+import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
+import org.datavec.api.split.NumberedFileInputSplit;
+import org.deeplearning4j.datasets.datavec.RecordReaderMultiDataSetIterator;
+import org.deeplearning4j.datasets.datavec.SequenceRecordReaderDataSetIterator;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+//import org.datavec.api.util.ClassPathResource;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.layers.FeedForwardLayer.Builder;
+import org.deeplearning4j.nn.conf.layers.GravesLSTM;
+import org.deeplearning4j.nn.conf.layers.LSTM;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.nd4j.evaluation.classification.Evaluation;
+import org.nd4j.evaluation.regression.RegressionEvaluation;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
+import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
+import org.slf4j.LoggerFactory;
+
+public class TestClass {
+	
+	private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(TestClass.class);
+	
+	public static void main(String[] args) throws IOException, InterruptedException{
+		// TODO Auto-generated method stub
+	//	File baseEX = new File("/Users/NiiArmah/JET_Training/AMS_Dataset");
+
+		//instantiating and initializing the base directory to look from
+		File baseDIR = new File("/Users/NiiArmah");
+	//	File labelsDirTrain = new File()
+		
+		//declaring and initializing the mini-batch size
+		int miniBatchSize = 20;
+		
+		//Loading the training data
+		SequenceRecordReader trainFEATURES = new CSVSequenceRecordReader(0, " ");
+		trainFEATURES.initialize(new NumberedFileInputSplit(baseDIR.getAbsolutePath() + "/HYPBW%d.csv", 0, 2));
+		SequenceRecordReader trainLABELS = new CSVSequenceRecordReader(0, " ");
+	    trainLABELS.initialize(new NumberedFileInputSplit(baseDIR.getAbsolutePath() + "/Label%d.csv", 0, 2));
+		DataSetIterator trainIter = new SequenceRecordReaderDataSetIterator(trainFEATURES, trainLABELS, miniBatchSize, 2, true, SequenceRecordReaderDataSetIterator.AlignmentMode.ALIGN_START);
+		
+		//Loading the test data
+		SequenceRecordReader testFEATURES = new CSVSequenceRecordReader(0, " ");
+        testFEATURES.initialize(new NumberedFileInputSplit(baseDIR.getAbsolutePath() + "/HYPtest%d.csv", 0, 1));
+        SequenceRecordReader testLABELS = new CSVSequenceRecordReader(0, " ");
+        testLABELS.initialize(new NumberedFileInputSplit(baseDIR.getAbsolutePath() + "/Label%d.csv", 0, 2));
+        DataSetIterator testIter = new SequenceRecordReaderDataSetIterator(testFEATURES, testLABELS, miniBatchSize, 2, true, SequenceRecordReaderDataSetIterator.AlignmentMode.ALIGN_END);
+        
+        //creating two data-sets one for training and one for testing
+          
+       // System.out.println(trainLABELS);
+       // System.out.println(trainIter);
+            
+     DataSet trainData = trainIter.next();
+     DataSet testData = testIter.next();
+    // trainIter.setPreProcessor(new DataSetPreProcessor());
+     System.out.println(trainData);
+     System.out.println(testData);
+  //  int j = 0;
+ //    while (trainIter.next() != null)  j++;
+   //  System.out.println(j);
+        
+
+        //normalizing the data
+        NormalizerStandardize normalizer = new NormalizerStandardize(); //using the normalize standardize normalizer because we are not using image data and the range within the dimensions is not uniform.
+        normalizer.fitLabel(true);
+        normalizer.fit(trainData); 
+        normalizer.transform(trainData);
+        normalizer.fit(testData);
+        normalizer.transform(testData);
+		
+		int rngSeed = 123; 
+		int nEpochs = 50; 
+		
+		System.out.println("Build model....");
+		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+				//random number generator that helps the program perform better when it comes to mapping the data.
+				.seed(rngSeed)
+				//adam is a type of optimizer that combines the nest aspects of other gradient models. it is an adaptive rate learning method so it adapts based on the weights and the different parameters. 
+				.updater(new Adam(0.006,0.9, 1.0, 0.00000000009))
+				//a regularization method that adds information to solve ill-posed problems as well as preventing overfitting.
+				.l2(1e-4)
+				.list()
+				.layer(0, new LSTM.Builder()
+					.nIn(3)
+					.nOut(10)
+					.activation(Activation.TANH)
+					.weightInit(WeightInit.XAVIER)
+					.build())
+				.layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
+					.nIn(10)
+					.nOut(2)
+					.activation(Activation.SOFTMAX)
+					.weightInit(WeightInit.XAVIER)
+					.build())
+				.build();
+		
+		//creates multi-layer model object.
+		MultiLayerNetwork model = new MultiLayerNetwork(conf);
+		// initialize multi-layer network.
+		model.init();
+		model.setListeners(new ScoreIterationListener(20));
+		//initiazes training of the model with training data.
+		System.out.println("Train model....");
+	//model.fit(dsi, nEpochs);
+		
+	        for (int i = 0; i < nEpochs; i++) 
+	        {
+	            model.fit(testData);
+	            LOGGER.info("Epoch " + i + " complete. Time series evaluation:");
+		
+	            RegressionEvaluation evaluation = new RegressionEvaluation();
+	            INDArray features = testData.getFeatures();
+
+	            INDArray labels = testData.getLabels();
+	            INDArray predicted = model.output(features, true);
+	            
+	            evaluation.evalTimeSeries(labels, predicted);
+	            
+	            System.out.println(evaluation.stats());
+	        }
+	
+	        model.rnnTimeStep(trainData.getFeatures());
+	        INDArray predicted = model.rnnTimeStep(testData.getFeatures());
+
+	        
+	        //Revert data back to original values for plotting
+	        normalizer.revert(trainData);
+	        normalizer.revert(testData);
+	        normalizer.revertLabels(predicted);
+
+	        INDArray trainFeatures = trainData.getFeatures();
+	        INDArray testFeatures = testData.getFeatures();
+	        //Create plot with out data
+	     //   XYSeriesCollection c = new XYSeriesCollection();
+	       // createSeries(c, trainFeatures, 0, "Train data");
+	        //createSeries(c, testFeatures, 99, "Actual test data");
+	        //createSeries(c, predicted, 100, "Predicted test data");
+
+	      //  plotDataset(c);
+
+	        LOGGER.info("----- Example Complete -----");
+	
+		System.out.println("Evaluate model....");
+		//applies the model to the testing data and evaluates the results.
+	//	Evaluation eval = model.evaluate(testDsi);
+		//prints the statistics of the model in terms of accuracy and how precise it is.
+	//	System.out.println(eval.stats()); 
+		
+		long t1 = System.currentTimeMillis();
+	//	double t = (double)(t1 - t0) / 1000.0;
+	//	System.out.println("\n\nTotal time: "+t+" seconds");
+		
+	}
+
+}
