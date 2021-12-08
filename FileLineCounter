@@ -1,0 +1,67 @@
+package jiBand;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.Scanner;
+
+import org.json.simple.parser.ParseException;
+
+public class FileLineCounter 
+{
+    public int getFileLineCountB(BufferedReader br) //public method that returns variable of type int and takes a parameter of type buffered reader
+    {
+        int intTotalFileCount=0; //the instantiation and declaration of the variable holding the total line count of the file
+
+        try 
+        {
+           while ((br.readLine()) !=null) //while loop that will continue to read a line of text from the parameter variable as long as it is not equal to null
+           {
+             intTotalFileCount ++; //increasing through the line count by value of 1
+           }
+                 
+         } catch (IOException e) 
+           {
+                 e.printStackTrace(); // this method helps to identify throwable errors and exceptions within the methods of the code
+           }
+          return intTotalFileCount;
+    }
+
+    public int getFileLineCountS(Scanner sc) throws IOException //public method that returns variable of type int and takes a parameter of type buffered reader
+    {
+        int intTotalFileCount=0; //the instantiation and declaration of the variable holding the total line count of the file
+
+        while ((sc.nextLine()) !=null) //while loop that will continue to read a line of text from the parameter variable as long as it is not equal to null
+           {
+             intTotalFileCount ++; //increasing through the line count by value of 1
+           }
+          return intTotalFileCount;
+    }
+    public static void main (String[] args) throws IOException, ParseException 
+    {
+    	int totalCount = 0;
+    	JuxtopiaDataConfig j = new JuxtopiaDataConfig();								//declaring and instantiating the class juxtopia data config as variable j.
+		String strValue = j.getJIBandDataConfig("TRN2");
+		BufferedReader br = null;
+		
+	try
+    	{
+    	 br = new BufferedReader(new FileReader(strValue));
+    	} 
+	catch (FileNotFoundException e) // the catch block uses this exception to tell the programmer if the file in use is not found within the memory.
+    	{
+    	// TODO Auto-generated catch block
+    	e.printStackTrace(); // same as above
+    	}
+
+	Scanner sc = new Scanner(new FileInputStream(strValue));
+	
+    	 FileLineCounter flc = new FileLineCounter(); //
+    	// totalCount = flc.getFileLineCountB(br); //
+    	 totalCount = flc.getFileLineCountS(sc);
+    	 System.out.println(totalCount);
+    }
+}
