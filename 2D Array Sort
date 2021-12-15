@@ -1,0 +1,38 @@
+package jiBand;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Scanner;
+import org.json.simple.parser.ParseException;
+
+@SuppressWarnings("deprecation")
+public class twoDArray0 
+{
+	public static void main(String[] args) throws IOException, ParseException 
+	{
+		int cCount = 4;		// declaring and instantiating a variable that stores the number of columns
+		int rCount;			// declaring a variable that represents the number of rows
+		JuxtopiaDataConfig j = new JuxtopiaDataConfig();	//declaring and instantiating the class juxtopia data config as variable j.
+    String strValue = j.getJIBandDataConfig("TRN2");	//declaring and instantiating a string variable to hold the path value taken from the data config method
+    BufferedReader jet0 = new BufferedReader(new FileReader(strValue));		//declaring and instantiating a buffered reader variable to store the content from the file
+    FileLineCounter flc = new FileLineCounter();		//
+    rCount = flc.getFileLineCountB(jet0); 
+    Scanner jet1 = new Scanner(System.in);
+    jet1 = new Scanner(new FileReader(strValue));
+    double [][] dA = new double[rCount][cCount];
+    while (jet1.hasNextLine()) 
+        {
+        	 for (int row = 0; row < dA.length; row++) 
+	         {
+	        	 String[] r = jet1.nextLine().split(" ");
+	            for (int column = 0; column < r.length; column++) 
+	            {
+	               dA[row][column] = Double.parseDouble(r[column]);
+	            }
+	         }
+        }
+        System.out.println(Arrays.deepToString(dA));
+	}
+}
