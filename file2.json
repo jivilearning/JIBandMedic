@@ -1,9 +1,12 @@
 {
-  "TestCorrect" : "/Users/NiiArmah/JET_Training/AMS_Dataset/testing/correct",
-  "TestIncorrect" : "/Users/NiiArmah/JET_Training/AMS_Dataset/testing/incorrect",
-  "TrainCorrect" : "/Users/NiiArmah/JET_Training/AMS_Dataset/training/correct",
-  "TrainIncorrect" : "/Users/NiiArmah/JET_Training/AMS_Dataset/training/incorrect",
+  "TrainLabels" : "/Users/NiiArmah/JET_Training/AMS_Dataset/Training Labels 2/trn%d.txt",
+  "TestLabels" : "/Users/NiiArmah/JET_Training/AMS_Dataset/Testing Labels/tst%d.txt",
+  "TrainFeatures" : "/Users/NiiArmah/JET_Training/AMS_Dataset/Training/AllData/trn%d.txt",
+  "TestFeatures" : "/Users/NiiArmah/JET_Training/AMS_Dataset/Testing/AllData/tst%d.txt",
   "TRNSets" : "/Users/NiiArmah/JET_Training/AMS_Dataset/TRNSets/TRN%d.txt",
   "TSTSets" : "/Users/NiiArmah/JET_Training/AMS_Dataset/TSTSets/TST%d.txt",
-  "TRN2" : "/Users/NiiArmah/JET_Training/AMS_Dataset/TRNSets/TRN2.txt"
+  "TRN2" : "/Users/NiiArmah/JET_Training/AMS_Dataset/TRNSets/TRNtest%d.txt",
+  "TST2" : "/Users/NiiArmah/JET_Training/AMS_Dataset/TSTSets/TSTtest%d.txt",
+  "TRNF" : "/Users/NiiArmah/JET_Training/AMS_Dataset/TRN%d.txt",
+  "TRNL" : "/Users/NiiArmah/AMSTRNLabel%d.txt"
 }
