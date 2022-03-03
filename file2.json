@@ -1,5 +1,5 @@
 {
-  "TrainLabels" : "/Users/NiiArmah/JET_Training/AMS_Dataset/Training Labels 2/trn%d.txt",
+  "TrainLabels" : "/Users/NiiArmah/JET_Training/AMS_Dataset/Training Labels/trn%d.txt",
   "TestLabels" : "/Users/NiiArmah/JET_Training/AMS_Dataset/Testing Labels/tst%d.txt",
   "TrainFeatures" : "/Users/NiiArmah/JET_Training/AMS_Dataset/Training/AllData/trn%d.txt",
   "TestFeatures" : "/Users/NiiArmah/JET_Training/AMS_Dataset/Testing/AllData/tst%d.txt",
