@@ -1,12 +1,11 @@
 package jiBand;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
 import org.datavec.api.split.NumberedFileInputSplit;
-import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.datavec.SequenceRecordReaderDataSetIterator;
+import org.deeplearning4j.datasets.datavec.SequenceRecordReaderDataSetIterator.AlignmentMode;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -22,52 +21,68 @@ import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.dataset.api.preprocessor.LabelLastTimeStepPreProcessor;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.LoggerFactory;
+import org.deeplearning4j.nn.conf.RNNFormat;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 
 @SuppressWarnings("deprecation")
 public class TestClassDL 
 {		
+	private static RNNFormat rnnDataFormat;
+
+    public TestClassDL(RNNFormat rnnDataFormat){
+        this.rnnDataFormat = rnnDataFormat;
+    }
+ //   @Parameterized.Parameters
+    public static Object[] params(){
+        return RNNFormat.values();
+    }
 	private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(TestClassDL.class);
 	public static void main(String[] args) throws IOException, InterruptedException, FileNotFoundException, ParseException{
 
 		JuxtopiaDataConfig j = new JuxtopiaDataConfig();								//declaring and instantiating the class juxtopia data config as variable j.
-		String trnValue = j.getJIBandDataConfig("TRN2");
-		String tstValue = j.getJIBandDataConfig("TST2");
+		String trnfeature = j.getJIBandDataConfig("TrainFeatures");
+		String tstfeature = j.getJIBandDataConfig("TestFeatures");
+		String trnlabel = j.getJIBandDataConfig("TrainLabels");
+		String tstlabel = j.getJIBandDataConfig("TestLabels");
 		//instantiating and initializing the base directory to look from
 		int seed = 123;
 		double learningRate = 1e-6;
 		double exponentialDecay1 = 0.9;
 		double exponentialDecay2 = 0.999;
 		double epsilon = 10e-8;
-		int miniBatchSize1 = 6540;
-		int miniBatchSize2 = 10218;
+		int miniBatchSize1 = 2;
+		//6540
+		int miniBatchSize2 = 3;
+		//10218
 		int nEpochs = 10;
 		int numInputs = 3;
 		int numOutputs = 2;
-		int numHiddenNodes = 3;
+		int numHiddenNodes = 2;
 		int labelIndex = 3;
 		int numLabels = 2;
 	
 		//Loading the training data
 		DataSet trainData;
-		SequenceRecordReader trainFEATURES = new CSVSequenceRecordReader(0, ";");
-		trainFEATURES.initialize(new NumberedFileInputSplit(trnValue, 2, 2));
-		//trainFEATURES.getLabels();
-		SequenceRecordReaderDataSetIterator trainIter =  new SequenceRecordReaderDataSetIterator(trainFEATURES, miniBatchSize1,  numLabels,labelIndex, false);
-		trainIter.setPreProcessor(new LabelLastTimeStepPreProcessor());
+		SequenceRecordReader trainFEATURES = new CSVSequenceRecordReader(0, " ");
+		trainFEATURES.initialize(new NumberedFileInputSplit(trnfeature, 1, 13));
+		SequenceRecordReader trainLabels = new CSVSequenceRecordReader();
+		trainLabels.initialize(new NumberedFileInputSplit(trnlabel, 1, 13));
+		SequenceRecordReaderDataSetIterator trainIter =  new SequenceRecordReaderDataSetIterator(trainFEATURES,trainLabels,miniBatchSize1,  numLabels, false, AlignmentMode.ALIGN_END );
+		//trainIter.setPreProcessor(new LabelLastTimeStepPreProcessor());
 		trainData = trainIter.next();
 
-	//Loading the test data
-	DataSet testData;
-	SequenceRecordReader testFEATURES = new CSVSequenceRecordReader(0, ";");
-        testFEATURES.initialize(new NumberedFileInputSplit(tstValue, 2, 2));
-        SequenceRecordReaderDataSetIterator testIter = new SequenceRecordReaderDataSetIterator(testFEATURES, miniBatchSize2, numLabels, labelIndex, false);
-        testIter.setPreProcessor(new LabelLastTimeStepPreProcessor());
+		//Loading the test data
+		DataSet testData;
+		SequenceRecordReader testFEATURES = new CSVSequenceRecordReader(0, " ");
+        testFEATURES.initialize(new NumberedFileInputSplit(tstfeature, 1, 11));
+        SequenceRecordReader testLabels = new CSVSequenceRecordReader();
+		testLabels.initialize(new NumberedFileInputSplit(tstlabel, 1, 11));
+        SequenceRecordReaderDataSetIterator testIter = new SequenceRecordReaderDataSetIterator(testFEATURES,testLabels,miniBatchSize2, numLabels, false, AlignmentMode.ALIGN_END);
+       // testIter.setPreProcessor(new LabelLastTimeStepPreProcessor());
         testData = testIter.next();
         
         //normalizing the data
@@ -75,8 +90,8 @@ public class TestClassDL
         normalizer.fitLabel(true);
         normalizer.fit(trainData); 
         normalizer.transform(trainData);
-        normalizer.fit(testData);
-        normalizer.transform(testData);
+       // normalizer.fit(testData);
+        //normalizer.transform(testData);
 		
 		System.out.println("Build model....");
 		MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -89,9 +104,9 @@ public class TestClassDL
 					//a regularization method that adds information to solve ill-posed problems as well as preventing overfitting.
 					.l2(1e-4)
 					.list()
-					.layer(0, new LastTimeStep (new LSTM.Builder().nIn(numInputs).nOut(numHiddenNodes).activation(Activation.TANH).weightInit(WeightInit.RELU).build()))
-					.layer(1, new LastTimeStep(new LSTM.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.TANH).weightInit(WeightInit.RELU).build()))
-					.layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(numHiddenNodes).nOut(numOutputs).activation(Activation.SOFTMAX).weightInit(WeightInit.XAVIER).build()).build();
+					.layer(0, new LastTimeStep (new LSTM.Builder().nIn(numInputs).nOut(numHiddenNodes).activation(Activation.TANH).dataFormat(rnnDataFormat).weightInit(WeightInit.RELU).build()))
+					//.layer(1, new LastTimeStep(new LSTM.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.TANH).weightInit(WeightInit.RELU).build()))
+					.layer(1, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(numHiddenNodes).nOut(numOutputs).activation(Activation.SOFTMAX).dataFormat(rnnDataFormat).weightInit(WeightInit.XAVIER).build()).setInputType(InputType.recurrent(3, rnnDataFormat)).build();
 					// .backpropType(BackpropType.TruncatedBPTT).tBPTTLength(100)
 				
 		//creates multi-layer model object.
@@ -101,7 +116,7 @@ public class TestClassDL
 		model.setListeners(new ScoreIterationListener(20));
 	
 		//initiazes training of the model with training data.
-		System.out.println("Train model....");
+		System.out.println("Train model....");		
 	        for (int i = 0; i < nEpochs; i++) 
 	        {
 	            model.fit(trainData);
@@ -113,7 +128,7 @@ public class TestClassDL
 	            INDArray labels = testData.getLabels();
 	            INDArray predicted = model.output(features, true);
 	            
-	          //applies the model to the testing data and evaluates the results.
+	            //applies the model to the testing data and evaluates the results.
 	            evaluation.evalTimeSeries(labels, predicted);
 	            eval.evalTimeSeries(labels, predicted);
 	         
