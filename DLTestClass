@@ -43,53 +43,55 @@ public class TestClassDL
 	private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(TestClassDL.class);
 	public static void main(String[] args) throws IOException, InterruptedException, FileNotFoundException, ParseException{
 
-		JuxtopiaDataConfig j = new JuxtopiaDataConfig();								//declaring and instantiating the class juxtopia data config as variable j.
-		String trnfeature = j.getJIBandDataConfig("TrainFeatures");
-		String tstfeature = j.getJIBandDataConfig("TestFeatures");
-		String trnlabel = j.getJIBandDataConfig("TrainLabels");
-		String tstlabel = j.getJIBandDataConfig("TestLabels");
-		//instantiating and initializing the base directory to look from
-		int seed = 123;
-		double learningRate = 1e-6;
-		double exponentialDecay1 = 0.9;
-		double exponentialDecay2 = 0.999;
-		double epsilon = 10e-8;
-		int miniBatchSize1 = 2;
+		JuxtopiaDataConfig j = new JuxtopiaDataConfig();				//declaring and instantiating the class juxtopia data config as variable j to call files from JSON.
+		String trnfeature = j.getJIBandDataConfig("TrainFeatures");		//declaring and initializing trnfeature as a String type to call the  key value pair that contains the absolute path of the file needed for use.
+		String tstfeature = j.getJIBandDataConfig("TestFeatures");		//declaring and initializing tstfeature as a String type to call the  key value pair that contains the absolute path of the file needed for use.
+		String trnlabel = j.getJIBandDataConfig("TrainLabels");			//declaring and initializing trnlabel as a String type to call the  key value pair that contains the absolute path of the file needed for use.
+		String tstlabel = j.getJIBandDataConfig("TestLabels");			//declaring and initializing trnlabel as a String type to call the  key value pair that contains the absolute path of the file needed for use.
+		
+		int seed = 12345;							//declaring and initializing the seed variable. Seed helps to produce predictable and repeatable data. It is arbitrary number chosen to be used for random number generation.
+		double learningRate = 1e-6;				//declaring and initializing the learning rate.
+		double exponentialDecay1 = 0.9;			//declaring and initializing the exponential decay I
+		double exponentialDecay2 = 0.999;		//declaring and initializing the exponential decay II
+		double epsilon = 10e-8;					//declaring and initializing the epsilon
+		int miniBatchSize1 = 9;					//declaring and initializing the mini batch size I
 		//6540
-		int miniBatchSize2 = 3;
+		int miniBatchSize2 = 9;					//declaring and initializing the mini batch size II
 		//10218
-		int nEpochs = 10;
-		int numInputs = 3;
-		int numOutputs = 2;
-		int numHiddenNodes = 2;
-		int labelIndex = 3;
-		int numLabels = 2;
+		int nEpochs = 20;						//declaring and initializing the Epochs
+		int numInputs = 3;						//declaring and initializing the Number of inputs
+		int numOutputs = 2;						//declaring and initializing the number of outputs
+		int numHiddenNodes = 2;					//declaring and initializing the number of hidden nodes
+		int numLabels = 2;						//declaring and initializing the number of possible labels
 	
 		//Loading the training data
-		DataSet trainData;
-		SequenceRecordReader trainFEATURES = new CSVSequenceRecordReader(0, " ");
-		trainFEATURES.initialize(new NumberedFileInputSplit(trnfeature, 1, 13));
-		SequenceRecordReader trainLabels = new CSVSequenceRecordReader();
-		trainLabels.initialize(new NumberedFileInputSplit(trnlabel, 1, 13));
-		SequenceRecordReaderDataSetIterator trainIter =  new SequenceRecordReaderDataSetIterator(trainFEATURES,trainLabels,miniBatchSize1,  numLabels, false, AlignmentMode.ALIGN_END );
+		DataSet trainData;																//declaring the dataset variable for training data
+		SequenceRecordReader trainFEATURES = new CSVSequenceRecordReader(0, " ");		//declaring and initializing the Record reader for the training data. These are intended to read sequences of data in CSV format. One file represents one sequence and each line in a file represents one time-step. parameters are number of lines to skip and the delimiter used.
+		trainFEATURES.initialize(new NumberedFileInputSplit(trnfeature, 1, 13));		//initializing the feature data coming from the record reader and specifying how many sequences to account for.
+		SequenceRecordReader trainLabels = new CSVSequenceRecordReader();				//declaring and initializing the record reader used for the label data.
+		trainLabels.initialize(new NumberedFileInputSplit(trnlabel, 1, 13));			//initializing the label data coming from the record reader and specifying how many label sequences to account for.
+		SequenceRecordReaderDataSetIterator trainIter =  new SequenceRecordReaderDataSetIterator(trainFEATURES,trainLabels,miniBatchSize1,  numLabels, false, AlignmentMode.ALIGN_END ); //declaring and initializing the dataset iterator with the full parameters including features, labels, mini btach size, possible number of labels, boolean for the type of problem this is  (regression or classification) and an alignment mode.
 		//trainIter.setPreProcessor(new LabelLastTimeStepPreProcessor());
-		trainData = trainIter.next();
-
+		trainData = trainIter.next();				//initializing the training dataset to return the next element in the iteration.
+		int nOut =  trainIter.totalOutcomes();
+		
+		
 		//Loading the test data
-		DataSet testData;
-		SequenceRecordReader testFEATURES = new CSVSequenceRecordReader(0, " ");
-        testFEATURES.initialize(new NumberedFileInputSplit(tstfeature, 1, 11));
-        SequenceRecordReader testLabels = new CSVSequenceRecordReader();
-		testLabels.initialize(new NumberedFileInputSplit(tstlabel, 1, 11));
-        SequenceRecordReaderDataSetIterator testIter = new SequenceRecordReaderDataSetIterator(testFEATURES,testLabels,miniBatchSize2, numLabels, false, AlignmentMode.ALIGN_END);
+		DataSet testData;																//declaring the dataset variable for testing data
+		SequenceRecordReader testFEATURES = new CSVSequenceRecordReader(0, " ");		//declaring and initializing the Record reader for the testing data. Parameters are number of lines to skip and the delimiter used.
+        testFEATURES.initialize(new NumberedFileInputSplit(tstfeature, 1, 11));			//initializing the feature data coming from the record reader and specifying how many sequences to account for.
+        SequenceRecordReader testLabels = new CSVSequenceRecordReader();				//declaring and initializing the record reader used for the label data.
+		testLabels.initialize(new NumberedFileInputSplit(tstlabel, 1, 11));				//initializing the label data coming from the record reader and specifying how many label sequences to account for.
+        SequenceRecordReaderDataSetIterator testIter = new SequenceRecordReaderDataSetIterator(testFEATURES,testLabels,miniBatchSize2, numLabels, false, AlignmentMode.ALIGN_END); //declaring and initializing the dataset iterator with the full parameters including features, labels, mini btach size, possible number of labels, boolean for the type of problem this is  (regression or classification) and an alignment mode.
        // testIter.setPreProcessor(new LabelLastTimeStepPreProcessor());
-        testData = testIter.next();
+        testData = testIter.next();	//initializing the testing dataset to return the next element in the iteration.
+        
         
         //normalizing the data
         NormalizerStandardize normalizer = new NormalizerStandardize(); //using the normalize standardize normalizer because we are not using image data and the range within the dimensions is not uniform.
-        normalizer.fitLabel(true);
-        normalizer.fit(trainData); 
-        normalizer.transform(trainData);
+        normalizer.fitLabel(true);										// method used to normalize the label and output data within a range
+        normalizer.fit(trainData); 										// method fits data for the training data.
+        normalizer.transform(trainData);								// method to transform the training data.
        // normalizer.fit(testData);
         //normalizer.transform(testData);
 		
@@ -103,30 +105,36 @@ public class TestClassDL
 					.updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS)
 					//a regularization method that adds information to solve ill-posed problems as well as preventing overfitting.
 					.l2(1e-4)
-					.list()
-					.layer(0, new LastTimeStep (new LSTM.Builder().nIn(numInputs).nOut(numHiddenNodes).activation(Activation.TANH).dataFormat(rnnDataFormat).weightInit(WeightInit.RELU).build()))
-					//.layer(1, new LastTimeStep(new LSTM.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.TANH).weightInit(WeightInit.RELU).build()))
-					.layer(1, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(numHiddenNodes).nOut(numOutputs).activation(Activation.SOFTMAX).dataFormat(rnnDataFormat).weightInit(WeightInit.XAVIER).build()).setInputType(InputType.recurrent(3, rnnDataFormat)).build();
+					.list()					// creates a list builder which allows for the NN layers to be implemented into the multilayer configuration
+					.layer(0,new LSTM.Builder().nIn(trainIter.inputColumns()).nOut(numInputs).activation(Activation.TANH).dataFormat(rnnDataFormat).weightInit(WeightInit.RELU).build())			//LSTM layer with parameters including the inputs, outputs, activation function, data format, and weight
+					.layer(1,new LSTM.Builder().nIn(numInputs).nOut(numHiddenNodes).activation(Activation.TANH).weightInit(WeightInit.RELU).build())
+					.layer(2,new LSTM.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.TANH).weightInit(WeightInit.RELU).build())
+					.layer(3,new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(numHiddenNodes).nOut(nOut).activation(Activation.SOFTMAX).dataFormat(rnnDataFormat).weightInit(WeightInit.XAVIER).build()).setInputType(InputType.recurrent(3, rnnDataFormat)).build(); //LSTM needs and Rnn output layer
 					// .backpropType(BackpropType.TruncatedBPTT).tBPTTLength(100)
 				
 		//creates multi-layer model object.
 		MultiLayerNetwork model = new MultiLayerNetwork(conf);
 		// initialize multi-layer network.
 		model.init();
-		model.setListeners(new ScoreIterationListener(20));
+		model.setListeners(new ScoreIterationListener(20));// sets the frequency of how to print data information
+		
+		System.out.println("Total number of parameters: " + model.numParams());
+		for( int i=0; i<model.getnLayers(); i++ ){
+		System.out.println("Layer " + i + " number of parameters: " + model.getLayer(i).numParams());
+		}
 	
 		//initiazes training of the model with training data.
 		System.out.println("Train model....");		
 	        for (int i = 0; i < nEpochs; i++) 
 	        {
-	            model.fit(trainData);
+	            model.fit(trainData); //fit method works to train the model on all the data all at once.
 	            LOGGER.info("Epoch " + i + " complete. Time series evaluation:");
 	            
-	            Evaluation eval = new Evaluation();
+	            Evaluation eval = new Evaluation(2);
 	            RegressionEvaluation evaluation = new RegressionEvaluation();
-	            INDArray features = testData.getFeatures();
-	            INDArray labels = testData.getLabels();
-	            INDArray predicted = model.output(features, true);
+	            INDArray features = testData.getFeatures();			// returns the feature array for the  test data
+	            INDArray labels = testData.getLabels();				// returns the label array for the test data
+	            INDArray predicted = model.output(features, false);	// returns the output based on all testing data
 	            
 	            //applies the model to the testing data and evaluates the results.
 	            evaluation.evalTimeSeries(labels, predicted);
@@ -134,7 +142,7 @@ public class TestClassDL
 	         
 	        	//prints the statistics of the model in terms of accuracy and how precise it is.
 	            System.out.println("Evaluate model....");
-	            System.out.println(evaluation.stats());
+	           // System.out.println(evaluation.stats());
 	            System.out.println(eval.stats());
 	        }
 	        model.rnnTimeStep(trainData.getFeatures());
