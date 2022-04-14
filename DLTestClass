@@ -108,8 +108,7 @@ public class TestClassDL
 					.list()					// creates a list builder which allows for the NN layers to be implemented into the multilayer configuration
 					.layer(0,new LSTM.Builder().nIn(trainIter.inputColumns()).nOut(numInputs).activation(Activation.TANH).dataFormat(rnnDataFormat).weightInit(WeightInit.RELU).build())			//LSTM layer with parameters including the inputs, outputs, activation function, data format, and weight
 					.layer(1,new LSTM.Builder().nIn(numInputs).nOut(numHiddenNodes).activation(Activation.TANH).weightInit(WeightInit.RELU).build())
-					.layer(2,new LSTM.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes).activation(Activation.TANH).weightInit(WeightInit.RELU).build())
-					.layer(3,new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(numHiddenNodes).nOut(nOut).activation(Activation.SOFTMAX).dataFormat(rnnDataFormat).weightInit(WeightInit.XAVIER).build()).setInputType(InputType.recurrent(3, rnnDataFormat)).build(); //LSTM needs and Rnn output layer
+					.layer(2,new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(numHiddenNodes).nOut(nOut).activation(Activation.SOFTMAX).dataFormat(rnnDataFormat).weightInit(WeightInit.XAVIER).build()).setInputType(InputType.recurrent(3, rnnDataFormat)).build(); //LSTM needs and Rnn output layer
 					// .backpropType(BackpropType.TruncatedBPTT).tBPTTLength(100)
 				
 		//creates multi-layer model object.
