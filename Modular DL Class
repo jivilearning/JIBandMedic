@@ -1,0 +1,158 @@
+package jiBand;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import org.datavec.api.records.reader.SequenceRecordReader;
+import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
+import org.datavec.api.split.NumberedFileInputSplit;
+import org.deeplearning4j.datasets.datavec.SequenceRecordReaderDataSetIterator;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.GradientNormalization;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.LSTM;
+import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.json.simple.parser.ParseException;
+import org.nd4j.evaluation.classification.Evaluation;
+import org.nd4j.evaluation.regression.RegressionEvaluation;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
+import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.slf4j.LoggerFactory;
+import org.deeplearning4j.nn.conf.RNNFormat;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+
+@SuppressWarnings("deprecation")
+public class modularDL {
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(TestClassDL.class);
+
+    public static void main(String[] args) {
+        try {
+            // Load data paths
+            String trnfeature = loadDataPath("TrF");
+            String tstfeature = loadDataPath("TeF");
+            String trnlabel = loadDataPath("TrL");
+            String tstlabel = loadDataPath("TeL");
+
+            //Hyperparameters
+            int seed = 12345;
+            double learningRate = 1e-6;
+            double exponentialDecay1 = 0.9;
+            double exponentialDecay2 = 0.999;
+            double epsilon = 10e-8;
+            int miniBatchSize1 = 10;
+            int miniBatchSize2 = 10;
+            int nEpochs = 20;
+            int numInputs = 3;
+            int numOutputs = 2;
+            int numHiddenNodes = 2;
+            int numLabels = 2;
+
+            // Load and preprocess training data
+            DataSet trainData = loadAndPreprocessData(trnfeature, trnlabel, miniBatchSize1);
+            int nOut = trainData.numOutcomes();
+
+            // Load and preprocess test data
+            DataSet testData = loadAndPreprocessData(tstfeature, tstlabel, miniBatchSize2);
+
+            // Build and configure the model
+            MultiLayerNetwork model = buildModel(seed, learningRate, exponentialDecay1, exponentialDecay2, epsilon,
+                    miniBatchSize1, numInputs, numHiddenNodes, numLabels, nOut);
+
+            // Initialize the model
+            model.init();
+            model.setListeners(new ScoreIterationListener(20));
+
+            // Train the model
+            trainModel(model, trainData, nEpochs);
+
+            // Evaluate the model
+            evaluateModel(model, testData);
+
+        } catch (IOException | InterruptedException | ParseException e) {
+            LOGGER.error("Error occurred: {}", e.getMessage());
+        }
+    }
+
+    private static String loadDataPath(String key) throws IOException, ParseException {
+        JuxtopiaDataConfig j = new JuxtopiaDataConfig();
+        return j.getJIBandDataConfig(key);
+    }
+
+    private static DataSet loadAndPreprocessData(String featurePath, String labelPath, int miniBatchSize) throws IOException, InterruptedException {
+        SequenceRecordReader featuresReader = new CSVSequenceRecordReader(0, " ");
+        featuresReader.initialize(new NumberedFileInputSplit(featurePath, 0, 330));
+
+        SequenceRecordReader labelsReader = new CSVSequenceRecordReader();
+        labelsReader.initialize(new NumberedFileInputSplit(labelPath, 0, 330));
+
+        SequenceRecordReaderDataSetIterator dataIter = new SequenceRecordReaderDataSetIterator(featuresReader,
+                labelsReader, miniBatchSize, 2, false, SequenceRecordReaderDataSetIterator.AlignmentMode.ALIGN_END);
+
+        NormalizerStandardize normalizer = new NormalizerStandardize();
+        normalizer.fitLabel(true);
+        normalizer.fit(dataIter);
+        normalizer.transform((org.nd4j.linalg.dataset.api.DataSet) dataIter);
+
+        return dataIter.next();
+    }
+
+    private static MultiLayerNetwork buildModel(int seed, double learningRate, double exponentialDecay1, double exponentialDecay2, double epsilon, int miniBatchSize, 
+    		int numInputs, int numHiddenNodes, int numLabels, int nOut) {
+        return new MultiLayerNetwork(new NeuralNetConfiguration.Builder()
+            .seed(seed)
+            .updater(new Adam(learningRate, exponentialDecay1, exponentialDecay2, epsilon))
+            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+            .updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS)
+            .l2(1e-4)
+            .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
+            .gradientNormalizationThreshold(0.5)
+            .list()
+            .layer(0, new LSTM.Builder().nIn(numInputs).nOut(numHiddenNodes)
+                    .activation(Activation.TANH).weightInit(WeightInit.RELU).build())
+            .layer(1, new LSTM.Builder().nIn(numHiddenNodes).nOut(numHiddenNodes)
+                    .activation(Activation.TANH).weightInit(WeightInit.RELU).build())
+            .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                    .nIn(numHiddenNodes).nOut(nOut).activation(Activation.SOFTMAX)
+                    .weightInit(WeightInit.XAVIER).build())
+            .setInputType(InputType.recurrent(3, RNNFormat.NCW))
+            .build());
+    }
+
+    private static void trainModel(MultiLayerNetwork model, DataSet trainData, int nEpochs) {
+        LOGGER.info("Build model....");
+        LOGGER.info("Total number of parameters: {}", model.numParams());
+        for (int i = 0; i < model.getnLayers(); i++) {
+            LOGGER.info("Layer {} number of parameters: {}", i, model.getLayer(i).numParams());
+        }
+
+        LOGGER.info("Train model....");
+        for (int i = 0; i < nEpochs; i++) {
+            model.fit(trainData);
+            LOGGER.info("Epoch {} complete. Time series evaluation:", i);
+        }
+    }
+
+    private static void evaluateModel(MultiLayerNetwork model, DataSet testData) {
+        LOGGER.info("Evaluate model....");
+        Evaluation eval = new Evaluation(2);
+        RegressionEvaluation evaluation = new RegressionEvaluation();
+        INDArray features = testData.getFeatures();
+        INDArray labels = testData.getLabels();
+        INDArray predicted = model.output(features, false);
+
+        evaluation.evalTimeSeries(labels, predicted);
+        eval.evalTimeSeries(labels, predicted);
+
+        LOGGER.info(eval.stats());
+    }
+}
