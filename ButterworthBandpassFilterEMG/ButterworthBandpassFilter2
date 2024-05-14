@@ -1,0 +1,95 @@
+package jiBand;
+
+import org.apache.commons.math3.complex.Complex;
+import org.apache.commons.math3.transform.FastFourierTransformer;
+import org.apache.commons.math3.transform.TransformType;
+
+import java.util.Random;
+
+public class ButterworthBandpassFilter2 {
+    private final int order;
+    private final int lowCutoffFrequency;
+    private final int highCutoffFrequency;
+
+    public ButterworthBandpassFilter2(int order, int lowCutoffFrequency, int highCutoffFrequency) {
+        this.order = order;
+        this.lowCutoffFrequency = lowCutoffFrequency;
+        this.highCutoffFrequency = highCutoffFrequency;
+    }
+
+    public int[] filter(int[] inputSignal, int samplingFrequency) {
+        // 1. Perform Fourier transform
+        Complex[] complexInputSignal = toComplexArray(inputSignal);
+        FastFourierTransformer transformer = new FastFourierTransformer(null);
+        Complex[] transformed = transformer.transform(complexInputSignal, TransformType.FORWARD);
+
+        // 2. Apply bandpass filter in the frequency domain
+        int[] frequencies = calculateFrequencies(samplingFrequency, inputSignal.length);
+        applyBandpassFilter(transformed, frequencies);
+
+        // 3. Perform inverse Fourier transform
+        Complex[] filteredTransformed = transformer.transform(transformed, TransformType.INVERSE);
+
+        // 4. Get the real part as the filtered signal
+        int[] filteredSignal = new int[inputSignal.length];
+        for (int i = 0; i < inputSignal.length; i++) {
+            filteredSignal[i] = (int)filteredTransformed[i].getReal();
+        }
+
+        return filteredSignal;
+    }
+
+    private Complex[] toComplexArray(int[] inputSignal) {
+        Complex[] complexSignal = new Complex[inputSignal.length];
+        for (int i = 0; i < inputSignal.length; i++) {
+            complexSignal[i] = new Complex(inputSignal[i], 0);
+        }
+        return complexSignal;
+    }
+
+    private int[] calculateFrequencies(int samplingFrequency, int signalLength) {
+        int[] frequencies = new int[signalLength];
+        int deltaFreq = samplingFrequency / signalLength;
+
+        for (int i = 0; i < signalLength; i++) {
+            frequencies[i] = i * deltaFreq;
+        }
+
+        return frequencies;
+    }
+
+    private void applyBandpassFilter(Complex[] transformed, int[] frequencies) {
+        // Zero out frequencies outside the specified bandpass
+        for (int i = 0; i < frequencies.length; i++) {
+            if (frequencies[i] < lowCutoffFrequency || frequencies[i] > highCutoffFrequency) {
+                transformed[i] = Complex.ZERO;
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        int order = 4;
+        int lowCutoffFrequency = 100; // Adjusted to represent 0.1 in a scaled manner
+        int highCutoffFrequency = 500; // Adjusted to represent 0.5 in a scaled manner
+
+        ButterworthBandpassFilter2 bandpassFilter = new ButterworthBandpassFilter2(order, lowCutoffFrequency, highCutoffFrequency);
+
+        // Apply the filter to a randomly generated input signal
+        int signalLength = 4;  // Adjust the length based on requirements
+        int[] inputSignal = generateRandomSignal(signalLength);
+        int samplingFrequency = 1000;  // Adjust the sampling frequency based on requirements
+
+        int[] filteredSignal = bandpassFilter.filter(inputSignal, samplingFrequency);
+
+        
+    }
+
+    private static int[] generateRandomSignal(int length) {
+        int[] signal = new int[length];
+        Random random = new Random();
+        for (int i = 0; i < length; i++) {
+            signal[i] = random.nextInt(1000);  // Adjust the generation logic based on requirements
+        }
+        return signal;
+    }
+}
